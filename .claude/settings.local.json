@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(venv/Scripts/activate:*)",
+      "Bash(pip install:*)",
+      "Bash(copy index.html index_original_backup.html)",
+      "Bash(copy index_integrated.html index.html)",
+      "Bash(Remove-Item \"index.html\", \"index_backup.html\", \"university_matcher.html\", \"university_matcher_design.md\", \"产品文档.md\" -Force)",
+      "Bash(del \"index.html\")",
+      "Bash(copy:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

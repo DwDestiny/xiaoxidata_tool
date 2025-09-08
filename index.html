@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>专业数据匹配与校验工具</title>
+    <title>智能数据匹配工具 - 专业匹配 & 院校匹配</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <style>
         * {
@@ -28,8 +28,8 @@
 
         .header {
             text-align: center;
-            margin-bottom: 40px;
-            padding: 40px 0;
+            margin-bottom: 30px;
+            padding: 40px 0 20px 0;
         }
 
         .header h1 {
@@ -46,6 +46,54 @@
             font-size: 1.2rem;
             color: #64748b;
             font-weight: 400;
+        }
+
+        /* 功能切换标签页 */
+        .function-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 16px;
+            padding: 6px;
+            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(79, 172, 254, 0.1);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 16px 24px;
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab-button:hover {
+            background: rgba(79, 172, 254, 0.1);
+            color: #4facfe;
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+        }
+
+        .tab-icon {
+            font-size: 1.2rem;
         }
 
         /* 功能说明区域 */
@@ -97,6 +145,8 @@
         .info-icon.overview { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
         .info-icon.matching { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
         .info-icon.validation { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .info-icon.upload { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .info-icon.result { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
 
         .info-card-title {
             font-size: 1.1rem;
@@ -145,6 +195,7 @@
         .priority-2 { background: #3b82f6; }
         .priority-3 { background: #f59e0b; }
         .priority-4 { background: #ef4444; }
+        .priority-5 { background: #8b5cf6; }
 
         .rule-text {
             flex: 1;
@@ -213,15 +264,13 @@
             max-height: 500px;
         }
 
-        @media (max-width: 1024px) {
-            .info-grid {
-                grid-template-columns: 1fr;
-                gap: 16px;
-            }
-            
-            .validation-grid {
-                grid-template-columns: 1fr;
-            }
+        /* 隐藏内容容器 */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         .main-card {
@@ -411,7 +460,6 @@
             margin-bottom: 32px;
         }
 
-        /* 总记录数单独显示 */
         .total-count-card {
             background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
             padding: 16px 20px;
@@ -435,7 +483,6 @@
             font-weight: 500;
         }
 
-        /* 匹配数据统计 */
         .match-stats-section {
             margin-bottom: 20px;
         }
@@ -451,7 +498,7 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 16px;
         }
 
@@ -485,6 +532,11 @@
         .stat-warning .stat-number { color: #f59e0b; }
         .stat-error .stat-number { color: #ef4444; }
         .stat-info .stat-number { color: #3b82f6; }
+        .stat-level1 .stat-number { color: #22c55e; }
+        .stat-level2 .stat-number { color: #10b981; }
+        .stat-level3 .stat-number { color: #f59e0b; }
+        .stat-level4 .stat-number { color: #ef4444; }
+        .stat-nomatch .stat-number { color: #6b7280; }
 
         .results-section {
             margin-top: 40px;
@@ -527,6 +579,11 @@
         .legend-success { background: #22c55e; }
         .legend-warning { background: #f59e0b; }
         .legend-error { background: #ef4444; }
+        .legend-level1 { background: #22c55e; }
+        .legend-level2 { background: #10b981; }
+        .legend-level3 { background: #f59e0b; }
+        .legend-level4 { background: #ef4444; }
+        .legend-nomatch { background: #6b7280; }
 
         .table-wrapper {
             height: 600px;
@@ -605,28 +662,45 @@
             background: #f8fafc;
         }
 
-        .row-success {
-            background: #f0fdf4 !important;
+        .row-success { background: #f0fdf4 !important; }
+        .row-warning { background: #fefce8 !important; }
+        .row-error { background: #fef2f2 !important; }
+        .row-level1 { background: #f0fdf4 !important; }
+        .row-level2 { background: #ecfdf5 !important; }
+        .row-level3 { background: #fefce8 !important; }
+        .row-level4 { background: #fef2f2 !important; }
+        .row-nomatch { background: #f9fafb !important; }
+
+        .row-success td.frozen { background: #f0fdf4 !important; }
+        .row-warning td.frozen { background: #fefce8 !important; }
+        .row-error td.frozen { background: #fef2f2 !important; }
+        .row-level1 td.frozen { background: #f0fdf4 !important; }
+        .row-level2 td.frozen { background: #ecfdf5 !important; }
+        .row-level3 td.frozen { background: #fefce8 !important; }
+        .row-level4 td.frozen { background: #fef2f2 !important; }
+        .row-nomatch td.frozen { background: #f9fafb !important; }
+
+        .confidence-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
         }
 
-        .row-warning {
-            background: #fefce8 !important;
+        .confidence-high {
+            background: #dcfce7;
+            color: #166534;
         }
 
-        .row-error {
-            background: #fef2f2 !important;
+        .confidence-medium {
+            background: #fef3c7;
+            color: #92400e;
         }
 
-        .row-success td.frozen {
-            background: #f0fdf4 !important;
-        }
-
-        .row-warning td.frozen {
-            background: #fefce8 !important;
-        }
-
-        .row-error td.frozen {
-            background: #fef2f2 !important;
+        .confidence-low {
+            background: #fee2e2;
+            color: #991b1b;
         }
 
         .progress-bar {
@@ -661,7 +735,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* 格式校验结果样式 */
         .validation-fixed {
             color: #f59e0b;
             font-weight: 500;
@@ -670,28 +743,6 @@
         .validation-issue {
             color: #ef4444;
             font-weight: 500;
-        }
-
-
-
-        /* 提示框样式 */
-        .tooltip {
-            position: absolute;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            max-width: 300px;
-            z-index: 1000;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            word-wrap: break-word;
-        }
-
-        .tooltip.show {
-            opacity: 1;
         }
 
         .validation-fixed {
@@ -703,43 +754,28 @@
             display: inline-block;
         }
 
-        .tooltip {
-            position: absolute;
-            background: #1f2937;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            z-index: 1000;
-            max-width: 300px;
-            word-wrap: break-word;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
+        @media (max-width: 1024px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            .validation-grid {
+                grid-template-columns: 1fr;
+            }
 
-        .tooltip.show {
-            opacity: 1;
-        }
-
-        .tooltip::after {
-            content: '';
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: #1f2937 transparent transparent transparent;
-        }
-
-        @media (max-width: 768px) {
             .upload-section {
                 grid-template-columns: 1fr;
                 gap: 24px;
             }
-            
+
+            .function-tabs {
+                max-width: 100%;
+                margin: 0 20px 40px 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
             .header h1 {
                 font-size: 2.2rem;
             }
@@ -777,101 +813,201 @@
             .table-wrapper {
                 height: 400px;
             }
+
+            .tab-button {
+                padding: 12px 16px;
+                font-size: 0.9rem;
+            }
+
+            .function-tabs {
+                margin: 0 10px 30px 10px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>专业数据匹配与校验工具</h1>
-            <p>智能化数据处理，提升工作效率</p>
+            <h1>🚀 智能数据匹配工具</h1>
+            <p>专业数据匹配校验 & 中国院校智能匹配</p>
         </div>
 
-        <!-- 功能说明区域 -->
-        <div class="info-section">
-            <div class="info-grid">
-                <!-- 系统功能概述 -->
-                <div class="info-card">
-                    <div class="info-card-header">
-                        <div class="info-icon overview">📊</div>
-                        <h3 class="info-card-title">系统功能概述</h3>
+        <!-- 功能切换标签页 -->
+        <div class="function-tabs">
+            <button class="tab-button active" onclick="switchTab('major')" id="majorTab">
+                <span class="tab-icon">🎓</span>
+                <span>专业匹配校验</span>
+            </button>
+            <button class="tab-button" onclick="switchTab('university')" id="universityTab">
+                <span class="tab-icon">🏫</span>
+                <span>中国院校匹配</span>
+            </button>
+        </div>
+
+        <!-- 专业匹配内容 -->
+        <div id="majorContent" class="tab-content active">
+            <!-- 功能说明区域 - 专业匹配 -->
+            <div class="info-section">
+                <div class="info-grid">
+                    <!-- 系统功能概述 -->
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <div class="info-icon overview">📊</div>
+                            <h3 class="info-card-title">系统功能概述</h3>
+                        </div>
+                        <div class="info-card-content">
+                            <p>专业数据智能匹配与格式校验工具，支持Excel文件批量处理，提供4级渐进式匹配算法和智能格式修正功能。</p>
+                            <button class="expand-toggle" onclick="toggleSection('overview')">
+                                查看详细功能 <span class="expand-icon">▼</span>
+                            </button>
+                            <div class="collapsible-content" id="overview-content">
+                                <ul class="rule-list">
+                                    <li class="rule-item">✓ 支持Excel文件拖拽上传和批量处理</li>
+                                    <li class="rule-item">✓ 智能数据匹配，自动绑定专业ID</li>
+                                    <li class="rule-item">✓ 格式校验与自动修正功能</li>
+                                    <li class="rule-item">✓ 实时统计和可视化结果展示</li>
+                                    <li class="rule-item">✓ 一键导出处理结果到Excel</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                    <div class="info-card-content">
-                        <p>专业数据智能匹配与格式校验工具，支持Excel文件批量处理，提供4级渐进式匹配算法和智能格式修正功能。</p>
-                        <button class="expand-toggle" onclick="toggleSection('overview')">
-                            查看详细功能 <span class="expand-icon">▼</span>
-                        </button>
-                        <div class="collapsible-content" id="overview-content">
-                            <ul class="rule-list">
-                                <li class="rule-item">✓ 支持Excel文件拖拽上传和批量处理</li>
-                                <li class="rule-item">✓ 智能数据匹配，自动绑定专业ID</li>
-                                <li class="rule-item">✓ 格式校验与自动修正功能</li>
-                                <li class="rule-item">✓ 实时统计和可视化结果展示</li>
-                                <li class="rule-item">✓ 一键导出处理结果到Excel</li>
-                            </ul>
+
+                    <!-- 匹配规则说明 -->
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <div class="info-icon matching">🎯</div>
+                            <h3 class="info-card-title">4级匹配规则</h3>
+                        </div>
+                        <div class="info-card-content">
+                            <p>采用4级渐进式匹配策略，优先级从高到低，确保数据匹配的准确性和完整性。</p>
+                            <button class="expand-toggle" onclick="toggleSection('matching')">
+                                查看匹配规则 <span class="expand-icon">▼</span>
+                            </button>
+                            <div class="collapsible-content" id="matching-content">
+                                <ul class="rule-list">
+                                    <li class="rule-item">
+                                        <span class="rule-priority priority-1">1</span>
+                                        <div class="rule-text"><strong>专业链接精确匹配</strong><br>标准化URL完全相同，最可靠的唯一标识</div>
+                                    </li>
+                                    <li class="rule-item">
+                                        <span class="rule-priority priority-2">2</span>
+                                        <div class="rule-text"><strong>课程编码精确匹配</strong><br>课程编码不为空且完全相同</div>
+                                    </li>
+                                    <li class="rule-item">
+                                        <span class="rule-priority priority-3">3</span>
+                                        <div class="rule-text"><strong>英文名+学位名称精确匹配</strong><br>智能组合后精确比对，核心匹配规则</div>
+                                    </li>
+                                    <li class="rule-item">
+                                        <span class="rule-priority priority-4">4</span>
+                                        <div class="rule-text"><strong>英文名+学位名称模糊匹配</strong><br>相似度>95%，结果标记"建议复核"</div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 校验规则说明 -->
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <div class="info-icon validation">🔧</div>
+                            <h3 class="info-card-title">格式校验规则</h3>
+                        </div>
+                        <div class="info-card-content">
+                            <p>智能检测和修正数据格式问题，支持学制、开学时间、申请费用等关键字段的自动标准化。</p>
+                            <button class="expand-toggle" onclick="toggleSection('validation')">
+                                查看校验规则 <span class="expand-icon">▼</span>
+                            </button>
+                            <div class="collapsible-content" id="validation-content">
+                                <div class="validation-grid">
+                                    <div class="validation-item">
+                                        <div class="validation-title">学制格式</div>
+                                        <div class="validation-desc">标准：数字/单位<br>如：2/年, 1.5/年<br>自动修正全角、缺失斜杠等问题</div>
+                                    </div>
+                                    <div class="validation-item">
+                                        <div class="validation-title">开学时间</div>
+                                        <div class="validation-desc">标准：YYYY年MM月<br>如：2024年09月<br>自动修正日期格式、补零等</div>
+                                    </div>
+                                    <div class="validation-item">
+                                        <div class="validation-title">申请费用</div>
+                                        <div class="validation-desc">标准：数字+币种全称<br>如：150澳大利亚元<br>自动转换缩写、识别币种</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- 匹配规则说明 -->
-                <div class="info-card">
-                    <div class="info-card-header">
-                        <div class="info-icon matching">🎯</div>
-                        <h3 class="info-card-title">4级匹配规则</h3>
-                    </div>
-                    <div class="info-card-content">
-                        <p>采用4级渐进式匹配策略，优先级从高到低，确保数据匹配的准确性和完整性。</p>
-                        <button class="expand-toggle" onclick="toggleSection('matching')">
-                            查看匹配规则 <span class="expand-icon">▼</span>
-                        </button>
-                        <div class="collapsible-content" id="matching-content">
-                            <ul class="rule-list">
-                                <li class="rule-item">
-                                    <span class="rule-priority priority-1">1</span>
-                                    <div class="rule-text"><strong>专业链接精确匹配</strong><br>标准化URL完全相同，最可靠的唯一标识</div>
-                                </li>
-                                <li class="rule-item">
-                                    <span class="rule-priority priority-2">2</span>
-                                    <div class="rule-text"><strong>课程编码精确匹配</strong><br>课程编码不为空且完全相同</div>
-                                </li>
-                                <li class="rule-item">
-                                    <span class="rule-priority priority-3">3</span>
-                                    <div class="rule-text"><strong>英文名+学位名称精确匹配</strong><br>智能组合后精确比对，核心匹配规则</div>
-                                </li>
-                                <li class="rule-item">
-                                    <span class="rule-priority priority-4">4</span>
-                                    <div class="rule-text"><strong>英文名+学位名称模糊匹配</strong><br>相似度>95%，结果标记"建议复核"</div>
-                                </li>
-                            </ul>
+        <!-- 院校匹配内容 -->
+        <div id="universityContent" class="tab-content">
+            <!-- 功能说明区域 - 院校匹配 -->
+            <div class="info-section">
+                <div class="info-grid">
+                    <!-- 文件上传说明 -->
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <div class="info-icon upload">📁</div>
+                            <h3 class="info-card-title">文件上传</h3>
+                        </div>
+                        <div class="info-card-content">
+                            <p><strong>院校数据库:</strong> 包含完整院校信息的Excel文件，需要包含院校ID和名称字段</p>
+                            <br>
+                            <p><strong>认可名单:</strong> 需要匹配院校ID的Excel文件，可包含中文名、英文名或混合格式的院校名称</p>
                         </div>
                     </div>
-                </div>
 
-                <!-- 校验规则说明 -->
-                <div class="info-card">
-                    <div class="info-card-header">
-                        <div class="info-icon validation">🔧</div>
-                        <h3 class="info-card-title">格式校验规则</h3>
+                    <!-- 匹配算法说明 -->
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <div class="info-icon matching">⚡</div>
+                            <h3 class="info-card-title">5级智能匹配</h3>
+                        </div>
+                        <div class="info-card-content">
+                            <p>采用5级渐进式匹配策略，处理中英文混合、格式多样的院校名称:</p>
+                            <button class="expand-toggle" onclick="toggleSection('university-matching')">
+                                查看匹配规则 <span class="expand-icon">▼</span>
+                            </button>
+                            <div class="collapsible-content" id="university-matching-content">
+                                <ul class="rule-list">
+                                    <li class="rule-item">
+                                        <span class="rule-priority priority-1">1</span>
+                                        <div class="rule-text"><strong>精确匹配</strong><br>完全相同的中英文名称 (100%)</div>
+                                    </li>
+                                    <li class="rule-item">
+                                        <span class="rule-priority priority-2">2</span>
+                                        <div class="rule-text"><strong>标准化匹配</strong><br>去除标点、统一大小写后匹配 (95%)</div>
+                                    </li>
+                                    <li class="rule-item">
+                                        <span class="rule-priority priority-3">3</span>
+                                        <div class="rule-text"><strong>关键词匹配</strong><br>提取地区+类型关键词匹配 (85%)</div>
+                                    </li>
+                                    <li class="rule-item">
+                                        <span class="rule-priority priority-4">4</span>
+                                        <div class="rule-text"><strong>模糊匹配</strong><br>编辑距离算法 (70%)</div>
+                                    </li>
+                                    <li class="rule-item">
+                                        <span class="rule-priority priority-5">5</span>
+                                        <div class="rule-text"><strong>语义匹配</strong><br>简称展开、核心词匹配 (60%)</div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                    <div class="info-card-content">
-                        <p>智能检测和修正数据格式问题，支持学制、开学时间、申请费用等关键字段的自动标准化。</p>
-                        <button class="expand-toggle" onclick="toggleSection('validation')">
-                            查看校验规则 <span class="expand-icon">▼</span>
-                        </button>
-                        <div class="collapsible-content" id="validation-content">
-                            <div class="validation-grid">
-                                <div class="validation-item">
-                                    <div class="validation-title">学制格式</div>
-                                    <div class="validation-desc">标准：数字/单位<br>如：2/年, 1.5/年<br>自动修正全角、缺失斜杠等问题</div>
-                                </div>
-                                <div class="validation-item">
-                                    <div class="validation-title">开学时间</div>
-                                    <div class="validation-desc">标准：YYYY年MM月<br>如：2024年09月<br>自动修正日期格式、补零等</div>
-                                </div>
-                                <div class="validation-item">
-                                    <div class="validation-title">申请费用</div>
-                                    <div class="validation-desc">标准：数字+币种全称<br>如：150澳大利亚元<br>自动转换缩写、识别币种</div>
-                                </div>
+
+                    <!-- 结果输出说明 -->
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <div class="info-icon result">📊</div>
+                            <h3 class="info-card-title">智能分析</h3>
+                        </div>
+                        <div class="info-card-content">
+                            <p>基于置信度的智能结果分类和建议:</p>
+                            <div style="margin-top: 12px;">
+                                <p>🟢 <strong>高置信度 (>90%)</strong>: 自动匹配成功</p>
+                                <p>🟡 <strong>中置信度 (70-90%)</strong>: 建议人工复核</p>
+                                <p>🔴 <strong>低置信度 (<70%)</strong>: 需要人工处理</p>
+                                <p>⚫ <strong>未匹配</strong>: 在数据库中未找到</p>
                             </div>
                         </div>
                     </div>
@@ -884,8 +1020,8 @@
             <div class="upload-section">
                 <div class="upload-box" id="existingDataBox">
                     <div class="upload-icon">📊</div>
-                    <h3>① 数据库现有数据</h3>
-                    <p class="upload-text">上传包含现有专业数据的Excel文件<br>支持 .xlsx, .xls 格式</p>
+                    <h3 id="uploadTitle1">① 数据库现有数据</h3>
+                    <p class="upload-text" id="uploadDesc1">上传包含存量专业数据的Excel文件<br>支持 .xlsx, .xls 格式</p>
                     <button class="upload-btn" onclick="document.getElementById('existingFile').click()">选择文件</button>
                     <input type="file" id="existingFile" class="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(this, 'existing')">
                     <div class="file-info" id="existingFileInfo"></div>
@@ -893,8 +1029,8 @@
 
                 <div class="upload-box" id="newDataBox">
                     <div class="upload-icon">📋</div>
-                    <h3>② 新爬取的待入库数据</h3>
-                    <p class="upload-text">上传包含新专业信息的Excel文件<br>支持 .xlsx, .xls 格式</p>
+                    <h3 id="uploadTitle2">② 新爬取的待入库数据</h3>
+                    <p class="upload-text" id="uploadDesc2">上传包含待处理的新专业信息的Excel文件<br>支持 .xlsx, .xls 格式</p>
                     <button class="upload-btn" onclick="document.getElementById('newFile').click()">选择文件</button>
                     <input type="file" id="newFile" class="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(this, 'new')">
                     <div class="file-info" id="newFileInfo"></div>
@@ -923,40 +1059,12 @@
             <div class="statistics-section" id="statisticsSection">
                 <div class="total-count-card">
                     <div class="total-count-number" id="totalCount">0</div>
-                    <div class="total-count-label">总记录数</div>
+                    <div class="total-count-label" id="totalCountLabel">总记录数</div>
                 </div>
                 <div class="match-stats-section">
-                    <h4 class="match-stats-title">匹配统计</h4>
-                    <div class="stats-grid">
-                        <div class="stat-card stat-success">
-                            <div class="stat-number" id="matchSuccessCount">0</div>
-                            <div class="stat-label">匹配成功</div>
-                        </div>
-                        <div class="stat-card stat-warning">
-                            <div class="stat-number" id="matchWarningCount">0</div>
-                            <div class="stat-label">需要复核</div>
-                        </div>
-                        <div class="stat-card stat-error">
-                            <div class="stat-number" id="matchFailCount">0</div>
-                            <div class="stat-label">匹配失败</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="format-stats-section">
-                    <h4 class="format-stats-title">格式统计</h4>
-                    <div class="stats-grid">
-                        <div class="stat-card stat-success">
-                            <div class="stat-number" id="formatOkCount">0</div>
-                            <div class="stat-label">格式正常</div>
-                        </div>
-                        <div class="stat-card stat-warning">
-                            <div class="stat-number" id="formatFixedCount">0</div>
-                            <div class="stat-label">已自动修复</div>
-                        </div>
-                        <div class="stat-card stat-error">
-                            <div class="stat-number" id="formatErrorCount">0</div>
-                            <div class="stat-label">需人工修复</div>
-                        </div>
+                    <h4 class="match-stats-title" id="statsTitle">匹配统计</h4>
+                    <div class="stats-grid" id="statsGrid">
+                        <!-- 动态生成统计卡片 -->
                     </div>
                 </div>
             </div>
@@ -965,19 +1073,8 @@
             <div class="results-section" id="resultsSection">
                 <div class="results-header">
                     <h3>处理结果预览</h3>
-                    <div class="legend">
-                        <div class="legend-item">
-                            <div class="legend-color legend-success"></div>
-                            <span>成功匹配，通过校验</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color legend-warning"></div>
-                            <span>模糊匹配，建议复核</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color legend-error"></div>
-                            <span>匹配失败或格式错误</span>
-                        </div>
+                    <div class="legend" id="legendContainer">
+                        <!-- 动态生成图例 -->
                     </div>
                 </div>
                 
@@ -993,21 +1090,102 @@
         </div>
     </div>
 
-    <div class="tooltip" id="tooltip"></div>
-
     <script>
         // 全局变量
+        let currentTab = 'major'; // 当前选中的功能
         let existingData = null;
         let newData = null;
         let processedData = null;
         let originalFileName = '';
+        let universityMatcher = null;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            universityMatcher = new UniversityMatcher();
+            setupDragAndDrop();
+            updateUIForTab(currentTab);
+        });
+
+        // 切换功能标签
+        function switchTab(tab) {
+            if (currentTab === tab) return;
+            
+            // 重置状态
+            resetAllStates();
+            
+            currentTab = tab;
+            
+            // 更新标签样式
+            document.getElementById('majorTab').classList.toggle('active', tab === 'major');
+            document.getElementById('universityTab').classList.toggle('active', tab === 'university');
+            
+            // 更新内容显示
+            document.getElementById('majorContent').classList.toggle('active', tab === 'major');
+            document.getElementById('universityContent').classList.toggle('active', tab === 'university');
+            
+            // 更新UI元素
+            updateUIForTab(tab);
+        }
+
+        // 重置所有状态
+        function resetAllStates() {
+            existingData = null;
+            newData = null;
+            processedData = null;
+            originalFileName = '';
+            
+            // 重置文件输入
+            document.getElementById('existingFile').value = '';
+            document.getElementById('newFile').value = '';
+            document.getElementById('existingFileInfo').style.display = 'none';
+            document.getElementById('newFileInfo').style.display = 'none';
+            
+            // 重置按钮状态
+            document.getElementById('processBtn').disabled = true;
+            document.getElementById('exportBtn').style.display = 'none';
+            
+            // 重置状态显示
+            document.getElementById('statusMessage').style.display = 'none';
+            document.getElementById('progressBar').style.display = 'none';
+            document.getElementById('statisticsSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'none';
+        }
+
+        // 根据标签更新UI
+        function updateUIForTab(tab) {
+            const processBtn = document.getElementById('processBtn');
+            const uploadTitle1 = document.getElementById('uploadTitle1');
+            const uploadTitle2 = document.getElementById('uploadTitle2');
+            const uploadDesc1 = document.getElementById('uploadDesc1');
+            const uploadDesc2 = document.getElementById('uploadDesc2');
+            const totalCountLabel = document.getElementById('totalCountLabel');
+            const statsTitle = document.getElementById('statsTitle');
+            
+            if (tab === 'major') {
+                processBtn.textContent = '开始匹配与校验';
+                uploadTitle1.innerHTML = '① 数据库现有数据';
+                uploadTitle2.innerHTML = '② 新爬取的待入库数据';
+                uploadDesc1.innerHTML = '上传包含存量专业数据的Excel文件<br>支持 .xlsx, .xls 格式';
+                uploadDesc2.innerHTML = '上传包含待处理的新专业信息的Excel文件<br>支持 .xlsx, .xls 格式';
+                totalCountLabel.textContent = '总记录数';
+                statsTitle.textContent = '匹配统计';
+            } else {
+                processBtn.textContent = '开始智能匹配';
+                uploadTitle1.innerHTML = '① 中国院校数据库';
+                uploadTitle2.innerHTML = '② 待匹配认可名单';
+                uploadDesc1.innerHTML = '上传包含院校ID和名称的Excel文件<br>支持 .xlsx, .xls 格式';
+                uploadDesc2.innerHTML = '上传需要匹配院校ID的Excel文件<br>支持中英文混合格式';
+                totalCountLabel.textContent = '总待匹配记录数';
+                statsTitle.textContent = '匹配结果统计';
+            }
+        }
 
         // 文件选择处理
         function handleFileSelect(input, type) {
             const file = input.files[0];
             if (!file) return;
 
-            const infoElement = document.getElementById(type + 'FileInfo');
+            const infoElement = document.getElementById(type === 'existing' ? 'existingFileInfo' : 'newFileInfo');
             infoElement.style.display = 'block';
             infoElement.textContent = `已选择: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`;
 
@@ -1069,7 +1247,6 @@
                     console.log('新数据已加载:', newData.length, '条记录');
                 }
                 
-                // 读取完成后检查是否可以开始处理
                 checkIfCanProcess();
             } catch (error) {
                 showStatus('文件读取失败: ' + error.message, 'error');
@@ -1090,6 +1267,7 @@
             const statusElement = document.getElementById('statusMessage');
             statusElement.className = `status ${type}`;
             statusElement.textContent = message;
+            statusElement.style.display = 'block';
         }
 
         // 更新进度条
@@ -1100,8 +1278,17 @@
             progressFill.style.width = percent + '%';
         }
 
-        // 开始处理
+        // 开始处理 - 根据当前标签调用不同的处理函数
         async function startProcessing() {
+            if (currentTab === 'major') {
+                await startMajorProcessing();
+            } else {
+                await startUniversityMatching();
+            }
+        }
+
+        // 专业匹配处理
+        async function startMajorProcessing() {
             const processBtn = document.getElementById('processBtn');
             processBtn.disabled = true;
             processBtn.innerHTML = '<div class="loading-spinner"></div>正在处理...';
@@ -1129,8 +1316,8 @@
                 updateProgress(100);
 
                 // 显示结果
-                displayResults();
-                displayStatistics();
+                displayMajorResults();
+                displayMajorStatistics();
                 
                 // 显示导出按钮和统计面板
                 document.getElementById('exportBtn').style.display = 'inline-block';
@@ -1147,6 +1334,952 @@
                 }, 1000);
             }
         }
+
+        // 院校匹配处理
+        async function startUniversityMatching() {
+            const processBtn = document.getElementById('processBtn');
+            processBtn.disabled = true;
+            processBtn.innerHTML = '<div class="loading-spinner"></div>正在智能匹配...';
+
+            try {
+                showStatus('正在初始化匹配引擎...', 'processing');
+                updateProgress(10);
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                showStatus('正在执行智能匹配...', 'processing');
+                updateProgress(30);
+
+                // 执行批量匹配
+                const queries = newData.map((record, index) => {
+                    return {
+                        index: index,
+                        record: record,
+                        name: extractUniversityName(record)
+                    };
+                });
+
+                const matchResults = [];
+                const total = queries.length;
+                
+                for (let i = 0; i < queries.length; i++) {
+                    const query = queries[i];
+                    const result = universityMatcher.match(query.name, existingData);
+                    
+                    matchResults.push({
+                        originalRecord: query.record,
+                        queryName: query.name,
+                        matchedRecord: result.match,
+                        confidence: result.confidence,
+                        level: result.level,
+                        reason: result.reason
+                    });
+
+                    // 更新进度
+                    const progress = 30 + (i + 1) / total * 50;
+                    updateProgress(progress);
+                    
+                    // 每100个记录暂停一次，避免阻塞UI
+                    if (i % 100 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 10));
+                    }
+                }
+
+                processedData = matchResults;
+
+                updateProgress(90);
+                showStatus('正在生成报告...', 'processing');
+
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                showStatus('匹配完成！', 'success');
+                updateProgress(100);
+
+                // 显示结果
+                displayUniversityResults();
+                displayUniversityStatistics();
+                
+                // 显示导出按钮和统计面板
+                document.getElementById('exportBtn').style.display = 'inline-block';
+                document.getElementById('statisticsSection').style.display = 'block';
+
+            } catch (error) {
+                showStatus('匹配失败: ' + error.message, 'error');
+                console.error('匹配错误:', error);
+            } finally {
+                processBtn.innerHTML = '开始智能匹配';
+                processBtn.disabled = false;
+                setTimeout(() => {
+                    document.getElementById('progressBar').style.display = 'none';
+                }, 1000);
+            }
+        }
+
+        // 从记录中提取院校名称
+        function extractUniversityName(record) {
+            const nameFields = [
+                'name', 'university_name', 'school_name', 'institution_name',
+                '院校名称', '学校名称', '中文名称', '英文名称', 
+                'chinese_name', 'english_name', '院校中文名', '院校英文名',
+                '名称', '学校', '院校', 'Name', 'University', 'School'
+            ];
+
+            for (const field of nameFields) {
+                if (record[field] && typeof record[field] === 'string') {
+                    return record[field].trim();
+                }
+            }
+
+            // 如果没找到明确字段，使用第一个非空文本字段
+            for (const [key, value] of Object.entries(record)) {
+                if (typeof value === 'string' && value.trim().length > 0) {
+                    return value.trim();
+                }
+            }
+
+            return '';
+        }
+
+        // 显示专业匹配统计
+        function displayMajorStatistics() {
+            if (!processedData) return;
+
+            const total = processedData.length;
+            
+            // 匹配统计
+            let matchSuccess = 0;
+            let matchWarning = 0;
+            let matchFail = 0;
+            
+            // 格式统计
+            let formatOk = 0;
+            let formatFixed = 0;
+            let formatError = 0;
+
+            processedData.forEach(record => {
+                // 匹配统计
+                if (record.matchLevel > 0) {
+                    if (record.matchLevel === 4 || record.匹配状态.includes('建议复核')) {
+                        matchWarning++;
+                    } else {
+                        matchSuccess++;
+                    }
+                } else {
+                    matchFail++;
+                }
+
+                // 格式统计
+                if (record.格式校验问题 === '无问题') {
+                    formatOk++;
+                } else if (record.格式校验问题.includes('已修正')) {
+                    formatFixed++;
+                } else {
+                    formatError++;
+                }
+            });
+
+            document.getElementById('totalCount').textContent = total;
+            
+            // 更新统计网格
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-card stat-success">
+                    <div class="stat-number">${matchSuccess}</div>
+                    <div class="stat-label">匹配成功</div>
+                </div>
+                <div class="stat-card stat-warning">
+                    <div class="stat-number">${matchWarning}</div>
+                    <div class="stat-label">需要复核</div>
+                </div>
+                <div class="stat-card stat-error">
+                    <div class="stat-number">${matchFail}</div>
+                    <div class="stat-label">匹配失败</div>
+                </div>
+                <div class="stat-card stat-success">
+                    <div class="stat-number">${formatOk}</div>
+                    <div class="stat-label">格式正常</div>
+                </div>
+                <div class="stat-card stat-warning">
+                    <div class="stat-number">${formatFixed}</div>
+                    <div class="stat-label">已自动修复</div>
+                </div>
+                <div class="stat-card stat-error">
+                    <div class="stat-number">${formatError}</div>
+                    <div class="stat-label">需人工修复</div>
+                </div>
+            `;
+
+            // 更新图例
+            const legendContainer = document.getElementById('legendContainer');
+            legendContainer.innerHTML = `
+                <div class="legend-item">
+                    <div class="legend-color legend-success"></div>
+                    <span>成功匹配，通过校验</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-warning"></div>
+                    <span>模糊匹配，建议复核</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-error"></div>
+                    <span>匹配失败或格式错误</span>
+                </div>
+            `;
+        }
+
+        // 显示院校匹配统计
+        function displayUniversityStatistics() {
+            if (!processedData) return;
+
+            const total = processedData.length;
+            const stats = {
+                level1: 0, level2: 0, level3: 0, level4: 0, level5: 0, nomatch: 0
+            };
+
+            processedData.forEach(result => {
+                if (result.level === 0) {
+                    stats.nomatch++;
+                } else {
+                    stats[`level${result.level}`]++;
+                }
+            });
+
+            document.getElementById('totalCount').textContent = total;
+            
+            // 更新统计网格
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-card stat-level1">
+                    <div class="stat-number">${stats.level1}</div>
+                    <div class="stat-label">精确匹配</div>
+                </div>
+                <div class="stat-card stat-level2">
+                    <div class="stat-number">${stats.level2}</div>
+                    <div class="stat-label">标准化匹配</div>
+                </div>
+                <div class="stat-card stat-level3">
+                    <div class="stat-number">${stats.level3}</div>
+                    <div class="stat-label">关键词匹配</div>
+                </div>
+                <div class="stat-card stat-level4">
+                    <div class="stat-number">${stats.level4 + stats.level5}</div>
+                    <div class="stat-label">模糊匹配</div>
+                </div>
+                <div class="stat-card stat-nomatch">
+                    <div class="stat-number">${stats.nomatch}</div>
+                    <div class="stat-label">未找到匹配</div>
+                </div>
+            `;
+
+            // 更新图例
+            const legendContainer = document.getElementById('legendContainer');
+            legendContainer.innerHTML = `
+                <div class="legend-item">
+                    <div class="legend-color legend-level1"></div>
+                    <span>精确匹配 (100%置信度)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-level2"></div>
+                    <span>标准化匹配 (95%置信度)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-level3"></div>
+                    <span>关键词匹配 (85%置信度)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-level4"></div>
+                    <span>模糊匹配 (需复核)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-nomatch"></div>
+                    <span>未找到匹配</span>
+                </div>
+            `;
+        }
+
+        // 显示专业匹配结果
+        function displayMajorResults() {
+            const resultsSection = document.getElementById('resultsSection');
+            const tableHeader = document.getElementById('tableHeader');
+            const tableBody = document.getElementById('tableBody');
+
+            resultsSection.style.display = 'block';
+
+            if (!processedData || processedData.length === 0) return;
+
+            // 生成表头
+            const headers = [...Object.keys(processedData[0])].filter(key => key !== 'matchLevel');
+            const frozenHeaders = ['专业ID', '匹配状态', '格式校验问题'];
+            
+            tableHeader.innerHTML = headers.map((header, index) => {
+                let className = '';
+                let frozenIndex = frozenHeaders.indexOf(header);
+                if (frozenIndex !== -1) {
+                    className = `frozen frozen-${frozenIndex + 1}`;
+                }
+                return `<th class="${className}">${header}</th>`;
+            }).join('');
+
+            // 生成表格内容
+            tableBody.innerHTML = processedData.map(record => {
+                const rowClass = getMajorRowClass(record);
+                const cells = headers.map((header, index) => {
+                    let value = record[header] || '';
+                    if (typeof value === 'object') {
+                        value = JSON.stringify(value);
+                    }
+                    
+                    let className = '';
+                    let frozenIndex = frozenHeaders.indexOf(header);
+                    if (frozenIndex !== -1) {
+                        className = `frozen frozen-${frozenIndex + 1}`;
+                    }
+                    
+                    // 处理过长的文本
+                    let displayValue = value;
+                    if (typeof value === 'string' && value.length > 30) {
+                        displayValue = value.substring(0, 30) + '...';
+                    }
+                    
+                    // 特殊处理格式校验问题列
+                    if (header === '格式校验问题') {
+                        if (value === '无问题') {
+                            displayValue = '<span style="color: #22c55e; font-weight: 500;">✓ 无问题</span>';
+                        } else if (value.includes('已修正')) {
+                            displayValue = `<span class="validation-fixed">${displayValue}</span>`;
+                        } else if (value && value !== '无问题') {
+                            displayValue = `<span class="validation-issue">${displayValue}</span>`;
+                        }
+                    }
+                    
+                    return `<td class="${className}">${displayValue}</td>`;
+                }).join('');
+                
+                return `<tr class="${rowClass}">${cells}</tr>`;
+            }).join('');
+        }
+
+        // 显示院校匹配结果
+        function displayUniversityResults() {
+            const resultsSection = document.getElementById('resultsSection');
+            const tableHeader = document.getElementById('tableHeader');
+            const tableBody = document.getElementById('tableBody');
+
+            resultsSection.style.display = 'block';
+
+            if (!processedData || processedData.length === 0) return;
+
+            // 生成表头
+            const originalColumns = Object.keys(processedData[0].originalRecord);
+            const headers = [
+                ...originalColumns,
+                '匹配院校ID',
+                '匹配院校名称',
+                '置信度',
+                '匹配方式',
+                '匹配原因'
+            ];
+            
+            tableHeader.innerHTML = headers.map(header => 
+                `<th>${header}</th>`
+            ).join('');
+
+            // 生成表格内容
+            tableBody.innerHTML = processedData.map(result => {
+                const rowClass = getUniversityRowClass(result.level);
+                const confidenceBadge = getConfidenceBadge(result.confidence);
+                
+                const cells = originalColumns.map(col => {
+                    const value = result.originalRecord[col] || '';
+                    const displayValue = typeof value === 'string' && value.length > 30 ? 
+                        value.substring(0, 30) + '...' : value;
+                    return `<td title="${value}">${displayValue}</td>`;
+                });
+
+                // 添加匹配结果列
+                const matchedId = result.matchedRecord ? 
+                    (result.matchedRecord.ID || result.matchedRecord.id || result.matchedRecord['院校ID'] || '') : '';
+                const matchedName = result.matchedRecord ? 
+                    extractUniversityName(result.matchedRecord) : '';
+
+                cells.push(`<td>${matchedId}</td>`);
+                cells.push(`<td title="${matchedName}">${matchedName.length > 20 ? matchedName.substring(0, 20) + '...' : matchedName}</td>`);
+                cells.push(`<td>${confidenceBadge}</td>`);
+                cells.push(`<td>Level ${result.level}</td>`);
+                cells.push(`<td title="${result.reason}">${result.reason}</td>`);
+                
+                return `<tr class="${rowClass}">${cells.join('')}</tr>`;
+            }).join('');
+        }
+
+        // 获取专业匹配行样式类
+        function getMajorRowClass(record) {
+            // 优先检查格式校验问题
+            if (record.格式校验问题 && record.格式校验问题 !== '无问题' && !record.格式校验问题.includes('已修正')) {
+                return 'row-error';
+            }
+            
+            // 再检查匹配状态
+            if (record.matchLevel === 0 || record.匹配状态.includes('未找到匹配项')) {
+                return 'row-error';
+            } else if (record.matchLevel === 4 || record.匹配状态.includes('建议复核')) {
+                return 'row-warning';
+            } else if (record.专业ID && record.matchLevel > 0) {
+                return 'row-success';
+            }
+            return '';
+        }
+
+        // 获取院校匹配行样式类
+        function getUniversityRowClass(level) {
+            if (level === 0) return 'row-nomatch';
+            return `row-level${Math.min(level, 4)}`; // Level 5 也使用 level4 样式
+        }
+
+        // 获取置信度徽章
+        function getConfidenceBadge(confidence) {
+            const percent = Math.round(confidence * 100);
+            let badgeClass = '';
+            
+            if (confidence >= 0.9) {
+                badgeClass = 'confidence-high';
+            } else if (confidence >= 0.7) {
+                badgeClass = 'confidence-medium';
+            } else {
+                badgeClass = 'confidence-low';
+            }
+            
+            return `<span class="confidence-badge ${badgeClass}">${percent}%</span>`;
+        }
+
+        // 切换信息区域展开/折叠
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId + '-content');
+            const button = event.target.closest('.expand-toggle');
+            const icon = button.querySelector('.expand-icon');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                button.classList.remove('expanded');
+                button.innerHTML = button.innerHTML.replace('收起详情', '查看详细功能')
+                    .replace('收起规则', '查看匹配规则')
+                    .replace('收起校验规则', '查看校验规则');
+            } else {
+                content.classList.add('expanded');
+                button.classList.add('expanded');
+                if (sectionId === 'overview') {
+                    button.innerHTML = button.innerHTML.replace('查看详细功能', '收起详情');
+                } else if (sectionId === 'matching') {
+                    button.innerHTML = button.innerHTML.replace('查看匹配规则', '收起规则');
+                } else if (sectionId === 'validation') {
+                    button.innerHTML = button.innerHTML.replace('查看校验规则', '收起校验规则');
+                } else if (sectionId === 'university-matching') {
+                    button.innerHTML = button.innerHTML.replace('查看匹配规则', '收起规则');
+                }
+            }
+        }
+
+        // 导出结果
+        function exportResults() {
+            if (!processedData) return;
+
+            let exportData = [];
+
+            if (currentTab === 'major') {
+                // 专业匹配导出
+                exportData = processedData.map(record => {
+                    const { matchLevel, ...exportRecord } = record;
+                    return exportRecord;
+                });
+            } else {
+                // 院校匹配导出
+                exportData = processedData.map(result => {
+                    const exportRecord = { ...result.originalRecord };
+                    
+                    // 添加匹配结果字段
+                    exportRecord['匹配院校ID'] = result.matchedRecord ? 
+                        (result.matchedRecord.ID || result.matchedRecord.id || result.matchedRecord['院校ID'] || '') : '';
+                    exportRecord['匹配院校名称'] = result.matchedRecord ? 
+                        extractUniversityName(result.matchedRecord) : '';
+                    exportRecord['置信度'] = Math.round(result.confidence * 100) + '%';
+                    exportRecord['匹配级别'] = result.level > 0 ? `Level ${result.level}` : '未匹配';
+                    exportRecord['匹配方式'] = result.reason;
+                    exportRecord['查询名称'] = result.queryName;
+                    
+                    return exportRecord;
+                });
+            }
+
+            // 创建工作簿
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            
+            // 设置列宽
+            const colWidths = [];
+            const headers = Object.keys(exportData[0] || {});
+            headers.forEach((header, index) => {
+                const maxLength = Math.max(
+                    header.length,
+                    ...exportData.map(row => String(row[header] || '').length)
+                );
+                colWidths[index] = { wch: Math.min(maxLength + 2, 50) };
+            });
+            ws['!cols'] = colWidths;
+
+            XLSX.utils.book_append_sheet(wb, ws, '处理结果');
+
+            // 生成文件名
+            const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
+            const suffix = currentTab === 'major' ? '专业匹配' : '院校匹配';
+            const fileName = `${originalFileName}-${suffix}结果-${date}.xlsx`;
+
+            // 导出文件
+            XLSX.writeFile(wb, fileName);
+        }
+
+        // 以下是专业匹配的具体实现函数
+        // [这里需要包含原有的专业匹配算法代码]
+    </script>
+
+    <!-- 中国院校匹配算法 -->
+    <script>
+        // 中国院校智能匹配算法类
+        class UniversityMatcher {
+            constructor() {
+                // 常见院校简称映射
+                this.abbreviationMap = {
+                    "北大": "北京大学",
+                    "清华": "清华大学",
+                    "复旦": "复旦大学",
+                    "上交": "上海交通大学",
+                    "西交": "西安交通大学", 
+                    "中科大": "中国科学技术大学",
+                    "哈工大": "哈尔滨工业大学",
+                    "北航": "北京航空航天大学",
+                    "北理工": "北京理工大学",
+                    "华科": "华中科技大学",
+                    "中大": "中山大学",
+                    "华南理工": "华南理工大学",
+                    "川大": "四川大学",
+                    "重大": "重庆大学",
+                    "西工大": "西北工业大学",
+                    "北师大": "北京师范大学",
+                    "华师大": "华东师范大学",
+                    "南师大": "南京师范大学",
+                    "华师": "华中师范大学",
+                    "陕师大": "陕西师范大学",
+                    "东师": "东北师范大学",
+                    "西南大学": "西南师范大学",
+                    "湖师大": "湖南师范大学",
+                    "华农": "华中农业大学",
+                    "南农": "南京农业大学",
+                    "西农": "西北农林科技大学",
+                    "中农": "中国农业大学",
+                };
+
+                // 常见英文缩写映射
+                this.englishAbbreviations = {
+                    "univ": "university",
+                    "coll": "college",
+                    "inst": "institute",
+                    "tech": "technology",
+                    "sci": "science",
+                    "eng": "engineering",
+                    "med": "medical",
+                    "agri": "agriculture",
+                    "norm": "normal",
+                };
+
+                // 院校类型关键词
+                this.universityTypes = [
+                    "大学", "学院", "学校", "university", "college", "institute", "school"
+                ];
+
+                // 地区关键词
+                this.regionKeywords = [
+                    "北京", "上海", "天津", "重庆", "广东", "江苏", "浙江", "山东", 
+                    "河南", "湖北", "湖南", "河北", "安徽", "福建", "江西", "四川",
+                    "陕西", "山西", "辽宁", "吉林", "黑龙江", "广西", "云南", "贵州",
+                    "青海", "甘肃", "新疆", "西藏", "宁夏", "内蒙古", "海南", "台湾",
+                    "香港", "澳门"
+                ];
+            }
+
+            // 主匹配函数
+            match(queryName, database) {
+                if (!queryName || !database || database.length === 0) {
+                    return { match: null, confidence: 0, level: 0, reason: "输入为空或数据库为空" };
+                }
+
+                // Level 1: 精确匹配
+                let result = this.exactMatch(queryName, database);
+                if (result.match) {
+                    return { ...result, level: 1, reason: "精确匹配" };
+                }
+
+                // Level 2: 标准化匹配
+                result = this.normalizedMatch(queryName, database);
+                if (result.match) {
+                    return { ...result, level: 2, reason: "标准化匹配" };
+                }
+
+                // Level 3: 关键词匹配
+                result = this.keywordMatch(queryName, database);
+                if (result.match) {
+                    return { ...result, level: 3, reason: "关键词匹配" };
+                }
+
+                // Level 4: 模糊匹配
+                result = this.fuzzyMatch(queryName, database);
+                if (result.match) {
+                    return { ...result, level: 4, reason: "模糊匹配" };
+                }
+
+                // Level 5: 语义匹配 (简化版)
+                result = this.semanticMatch(queryName, database);
+                if (result.match) {
+                    return { ...result, level: 5, reason: "语义匹配" };
+                }
+
+                return { match: null, confidence: 0, level: 0, reason: "未找到匹配" };
+            }
+
+            // Level 1: 精确匹配
+            exactMatch(queryName, database) {
+                for (const record of database) {
+                    // 检查所有可能的名称字段
+                    const nameFields = this.extractNameFields(record);
+                    
+                    for (const field of nameFields) {
+                        if (field && field.trim() === queryName.trim()) {
+                            return { match: record, confidence: 1.0 };
+                        }
+                    }
+                }
+                return { match: null, confidence: 0 };
+            }
+
+            // Level 2: 标准化匹配
+            normalizedMatch(queryName, database) {
+                const normalizedQuery = this.normalizeText(queryName);
+                
+                for (const record of database) {
+                    const nameFields = this.extractNameFields(record);
+                    
+                    for (const field of nameFields) {
+                        if (field && this.normalizeText(field) === normalizedQuery) {
+                            return { match: record, confidence: 0.95 };
+                        }
+                    }
+                }
+                return { match: null, confidence: 0 };
+            }
+
+            // Level 3: 关键词匹配
+            keywordMatch(queryName, database) {
+                const queryKeywords = this.extractKeywords(queryName);
+                if (queryKeywords.length === 0) {
+                    return { match: null, confidence: 0 };
+                }
+
+                let bestMatch = null;
+                let bestScore = 0;
+
+                for (const record of database) {
+                    const nameFields = this.extractNameFields(record);
+                    
+                    for (const field of nameFields) {
+                        if (!field) continue;
+                        
+                        const recordKeywords = this.extractKeywords(field);
+                        const similarity = this.calculateKeywordSimilarity(queryKeywords, recordKeywords);
+                        
+                        if (similarity > bestScore && similarity >= 0.8) {
+                            bestScore = similarity;
+                            bestMatch = record;
+                        }
+                    }
+                }
+
+                return bestMatch ? 
+                    { match: bestMatch, confidence: bestScore } : 
+                    { match: null, confidence: 0 };
+            }
+
+            // Level 4: 模糊匹配
+            fuzzyMatch(queryName, database) {
+                const normalizedQuery = this.normalizeText(queryName);
+                let bestMatch = null;
+                let bestScore = 0;
+
+                for (const record of database) {
+                    const nameFields = this.extractNameFields(record);
+                    
+                    for (const field of nameFields) {
+                        if (!field) continue;
+                        
+                        const normalizedField = this.normalizeText(field);
+                        
+                        // 编辑距离相似度
+                        const editSimilarity = this.calculateEditSimilarity(normalizedQuery, normalizedField);
+                        
+                        // 包含关系检查
+                        const containsSimilarity = this.calculateContainsSimilarity(normalizedQuery, normalizedField);
+                        
+                        // 取最高分
+                        const similarity = Math.max(editSimilarity, containsSimilarity);
+                        
+                        if (similarity > bestScore && similarity >= 0.7) {
+                            bestScore = similarity;
+                            bestMatch = record;
+                        }
+                    }
+                }
+
+                return bestMatch ? 
+                    { match: bestMatch, confidence: bestScore } : 
+                    { match: null, confidence: 0 };
+            }
+
+            // Level 5: 语义匹配 (简化版)
+            semanticMatch(queryName, database) {
+                // 尝试简称映射
+                const expandedName = this.expandAbbreviation(queryName);
+                if (expandedName !== queryName) {
+                    return this.normalizedMatch(expandedName, database);
+                }
+
+                // 尝试部分匹配
+                let bestMatch = null;
+                let bestScore = 0;
+
+                const queryCore = this.extractCoreWords(queryName);
+                
+                for (const record of database) {
+                    const nameFields = this.extractNameFields(record);
+                    
+                    for (const field of nameFields) {
+                        if (!field) continue;
+                        
+                        const recordCore = this.extractCoreWords(field);
+                        const similarity = this.calculateCoreSimilarity(queryCore, recordCore);
+                        
+                        if (similarity > bestScore && similarity >= 0.6) {
+                            bestScore = similarity;
+                            bestMatch = record;
+                        }
+                    }
+                }
+
+                return bestMatch ? 
+                    { match: bestMatch, confidence: bestScore } : 
+                    { match: null, confidence: 0 };
+            }
+
+            // 从记录中提取所有可能的名称字段
+            extractNameFields(record) {
+                const fields = [];
+                
+                // 常见的名称字段
+                const nameColumns = [
+                    'name', 'university_name', 'school_name', 'institution_name',
+                    '院校名称', '学校名称', '中文名称', '英文名称', 
+                    'chinese_name', 'english_name', '院校中文名', '院校英文名',
+                    '名称', '学校', '院校', 'Name', 'University', 'School'
+                ];
+
+                for (const col of nameColumns) {
+                    if (record[col]) {
+                        fields.push(record[col]);
+                    }
+                }
+
+                // 如果没有找到明确的名称字段，尝试第一个文本字段
+                if (fields.length === 0) {
+                    const firstTextValue = Object.values(record).find(value => 
+                        typeof value === 'string' && value.trim().length > 0
+                    );
+                    if (firstTextValue) {
+                        fields.push(firstTextValue);
+                    }
+                }
+
+                return fields;
+            }
+
+            // 文本标准化处理
+            normalizeText(text) {
+                if (!text) return '';
+                
+                return text.toString()
+                    .toLowerCase()
+                    // 去除标点符号
+                    .replace(/[.,;:!?'"()[\]{}—–-]/g, '')
+                    // 统一空格
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    // 全角转半角
+                    .replace(/[\uFF01-\uFF5E]/g, function(char) {
+                        return String.fromCharCode(char.charCodeAt(0) - 0xFEE0);
+                    })
+                    // 中文标点转换
+                    .replace(/[，。；：！？'"（）【】｛｝]/g, '');
+            }
+
+            // 提取关键词
+            extractKeywords(text) {
+                if (!text) return [];
+                
+                const normalized = this.normalizeText(text);
+                const keywords = [];
+
+                // 提取中文地区词
+                for (const region of this.regionKeywords) {
+                    if (normalized.includes(region)) {
+                        keywords.push(region);
+                    }
+                }
+
+                // 提取院校类型词
+                for (const type of this.universityTypes) {
+                    if (normalized.includes(type.toLowerCase())) {
+                        keywords.push(type);
+                    }
+                }
+
+                // 提取其他重要词汇（长度>=2的词）
+                const words = normalized.split(/[\s,，]+/).filter(word => 
+                    word.length >= 2 && 
+                    !this.universityTypes.includes(word) &&
+                    !this.regionKeywords.includes(word)
+                );
+                keywords.push(...words);
+
+                return [...new Set(keywords)]; // 去重
+            }
+
+            // 计算关键词相似度
+            calculateKeywordSimilarity(keywords1, keywords2) {
+                if (keywords1.length === 0 || keywords2.length === 0) {
+                    return 0;
+                }
+
+                const set1 = new Set(keywords1.map(k => k.toLowerCase()));
+                const set2 = new Set(keywords2.map(k => k.toLowerCase()));
+                
+                const intersection = new Set([...set1].filter(x => set2.has(x)));
+                const union = new Set([...set1, ...set2]);
+                
+                return intersection.size / union.size;
+            }
+
+            // 计算编辑距离相似度
+            calculateEditSimilarity(str1, str2) {
+                if (str1 === str2) return 1.0;
+                if (str1.length === 0 || str2.length === 0) return 0;
+
+                const distance = this.levenshteinDistance(str1, str2);
+                const maxLength = Math.max(str1.length, str2.length);
+                
+                return 1 - (distance / maxLength);
+            }
+
+            // 计算包含关系相似度
+            calculateContainsSimilarity(str1, str2) {
+                const shorter = str1.length <= str2.length ? str1 : str2;
+                const longer = str1.length > str2.length ? str1 : str2;
+                
+                if (longer.includes(shorter)) {
+                    return shorter.length / longer.length;
+                }
+                
+                return 0;
+            }
+
+            // 编辑距离算法
+            levenshteinDistance(str1, str2) {
+                const matrix = [];
+
+                for (let i = 0; i <= str2.length; i++) {
+                    matrix[i] = [i];
+                }
+
+                for (let j = 0; j <= str1.length; j++) {
+                    matrix[0][j] = j;
+                }
+
+                for (let i = 1; i <= str2.length; i++) {
+                    for (let j = 1; j <= str1.length; j++) {
+                        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                            matrix[i][j] = matrix[i - 1][j - 1];
+                        } else {
+                            matrix[i][j] = Math.min(
+                                matrix[i - 1][j - 1] + 1, // 替换
+                                matrix[i][j - 1] + 1,     // 插入
+                                matrix[i - 1][j] + 1      // 删除
+                            );
+                        }
+                    }
+                }
+
+                return matrix[str2.length][str1.length];
+            }
+
+            // 展开简称
+            expandAbbreviation(text) {
+                if (!text) return text;
+                
+                // 中文简称展开
+                for (const [abbr, full] of Object.entries(this.abbreviationMap)) {
+                    if (text.includes(abbr)) {
+                        return text.replace(abbr, full);
+                    }
+                }
+
+                return text;
+            }
+
+            // 提取核心词汇
+            extractCoreWords(text) {
+                if (!text) return [];
+                
+                const normalized = this.normalizeText(text);
+                const words = normalized.split(/[\s,，]+/);
+                
+                // 过滤掉常见的无意义词汇
+                const stopWords = ['的', '和', '与', 'of', 'and', 'the', 'in', 'at', 'for'];
+                
+                return words.filter(word => 
+                    word.length >= 2 && 
+                    !stopWords.includes(word.toLowerCase())
+                );
+            }
+
+            // 计算核心词相似度
+            calculateCoreSimilarity(core1, core2) {
+                if (core1.length === 0 || core2.length === 0) {
+                    return 0;
+                }
+
+                let matches = 0;
+                const maxLength = Math.max(core1.length, core2.length);
+
+                for (const word1 of core1) {
+                    for (const word2 of core2) {
+                        if (word1 === word2 || 
+                            word1.includes(word2) || 
+                            word2.includes(word1)) {
+                            matches++;
+                            break;
+                        }
+                    }
+                }
+
+                return matches / maxLength;
+            }
+        }
+
+        // ========== 专业匹配算法实现 ==========
 
         // 数据匹配核心逻辑
         async function performDataMatching() {
@@ -1168,7 +2301,7 @@
                     for (const existing of existingData) {
                         if (existing.专业链接 && normalizeUrl(existing.专业链接) === normalizedNewUrl) {
                             matchResult.专业ID = existing.ID || existing.专业ID || '';
-                                                            matchResult.匹配状态 = '通过专业链接精确匹配';
+                            matchResult.匹配状态 = '通过专业链接精确匹配';
                             matchResult.matchLevel = 1;
                             break;
                         }
@@ -1211,8 +2344,8 @@
                     for (const existing of existingData) {
                         if (existing.专业英文名 && existing.学位名称 === newRecord.学位名称) {
                             const similarity = calculateStringSimilarity(
-                                normalizeText(newRecord.专业英文名), 
-                                normalizeText(existing.专业英文名)
+                                normalizeTextForMajor(newRecord.专业英文名), 
+                                normalizeTextForMajor(existing.专业英文名)
                             );
                             if (similarity > 0.95 && similarity > bestSimilarity) {
                                 bestMatch = existing;
@@ -1294,8 +2427,8 @@
             return matchedData;
         }
 
-        // 文本标准化
-        function normalizeText(text) {
+        // 专业匹配文本标准化
+        function normalizeTextForMajor(text) {
             if (!text) return '';
             return text.toLowerCase()
                        .replace(/[()&\-\s]/g, '')
@@ -1314,8 +2447,8 @@
         function normalizeEnglishName(englishName, degree) {
             if (!englishName || !degree) return '';
             
-            const normalized = normalizeText(englishName);
-            const normalizedDegree = normalizeText(degree);
+            const normalized = normalizeTextForMajor(englishName);
+            const normalizedDegree = normalizeTextForMajor(degree);
             
             // 如果英文名已包含学位信息，不重复添加
             if (normalized.includes(normalizedDegree) || 
@@ -1351,34 +2484,27 @@
                 'SGD': '新加坡元', '新币': '新加坡元'
             };
 
-            // 1. 清理多余文字和标点
+            // 清理和提取逻辑...
             corrected = corrected
                 .replace(/申请费用[：:]/g, '')
                 .replace(/费用[：:]/g, '')
                 .replace(/[。，,;；]/g, '')
-                .replace(/\s+/g, ''); // 移除所有空格
+                .replace(/\s+/g, '');
 
-            // 2. 提取数字部分
             const numberMatch = corrected.match(/(\d+(?:\.\d+)?)/);
             if (!numberMatch) {
                 return { corrected: original, isValid: false, error: '申请费用中未找到有效数字', wasFixed: false };
             }
             const amount = numberMatch[1];
 
-            // 3. 识别币种
             let currency = '';
-            let foundCurrencyKey = '';
-            
-            // 遍历币种映射表查找匹配
             for (const [key, value] of Object.entries(currencyMapping)) {
                 if (corrected.includes(key)) {
                     currency = value;
-                    foundCurrencyKey = key;
                     break;
                 }
             }
 
-            // 如果没有找到映射的币种，尝试直接匹配常见中文币种
             if (!currency) {
                 const chineseCurrencies = ['澳大利亚元', '美元', '英镑', '欧元', '加拿大元', '新西兰元', '日元', '人民币', '瑞士法郎', '新加坡元'];
                 for (const curr of chineseCurrencies) {
@@ -1389,15 +2515,11 @@
                 }
             }
 
-            // 如果仍然没有找到币种
             if (!currency) {
                 return { corrected: original, isValid: false, error: '申请费用中未识别到有效币种', wasFixed: false };
             }
 
-            // 4. 组合标准格式
             const standardFormat = `${amount}${currency}`;
-            
-            // 5. 检查是否需要修正
             wasFixed = original !== standardFormat;
 
             return {
@@ -1450,21 +2572,17 @@
             let corrected = original;
             let wasFixed = false;
 
-            // 首先尝试多种自动修复
-            // 1. 全角字符转半角
+            // 标准化处理
             corrected = corrected
                 .replace(/／/g, '/') 
                 .replace(/，/g, ',') 
-                .replace(/\s+/g, ''); // 移除所有空格
-
-            // 2. 处理常见格式变体
-            corrected = corrected
+                .replace(/\s+/g, '')
                 .replace(/个学期/g, '学期')
                 .replace(/（/g, '(')
                 .replace(/）/g, ')')
                 .replace(/；/g, ';');
 
-            // 3. 自动补全标准格式
+            // 自动补全格式
             corrected = corrected
                 .replace(/(\d+(\.\d+)?)年/g, '$1/年')
                 .replace(/(\d+(\.\d+)?)月/g, '$1/月')
@@ -1472,18 +2590,13 @@
                 .replace(/(\d+(\.\d+)?)学期/g, '$1/学期')
                 .replace(/(\d+(\.\d+)?)学分/g, '$1/学分');
 
-            // 4. 处理缺少斜杠的数字+单位组合
             corrected = corrected.replace(/(\d+(\.\d+)?)(年|月|周|学期|学分)/g, '$1/$3');
-
-            // 5. 处理多个连续斜杠
             corrected = corrected.replace(/\/+/g, '/');
-
-            // 6. 标准化分隔符
             corrected = corrected.replace(/[;；]/g, ',');
 
             wasFixed = original !== corrected;
 
-            // 验证修正后的格式
+            // 验证格式
             const validUnits = ['年', '月', '周', '学期', '学分'];
             const parts = corrected.split(',').filter(p => p.trim());
             let isValid = true;
@@ -1496,10 +2609,8 @@
             for (const part of parts) {
                 const trimmedPart = part.trim();
                 if (!trimmedPart.includes('/')) {
-                    // 尝试进一步修复
                     const match = trimmedPart.match(/^(\d+(?:\.\d+)?)(年|月|周|学期|学分)$/);
                     if (match) {
-                        // 可以修复，更新corrected
                         corrected = corrected.replace(trimmedPart, `${match[1]}/${match[2]}`);
                         wasFixed = true;
                         continue;
@@ -1535,29 +2646,22 @@
             let corrected = original;
             let wasFixed = false;
 
-            // 1. 标准化分隔符和格式
+            // 标准化处理
             corrected = corrected
-                .replace(/[.\/]/g, '-') // 统一使用连字符
-                .replace(/\s+/g, '') // 移除空格
-                .replace(/[；;]/g, ',') // 标准化多个时间的分隔符
-                .replace(/，/g, ','); // 全角逗号转半角
+                .replace(/[.\/]/g, '-')
+                .replace(/\s+/g, '')
+                .replace(/[；;]/g, ',')
+                .replace(/，/g, ',');
 
-            // 2. 处理年月格式变体
-            // 处理 YYYY年MM月 格式
+            // 格式转换
             corrected = corrected.replace(/(\d{4})年(\d{1,2})月/g, '$1-$2');
-            
-            // 处理 YYYY.MM 或 YYYY/MM 格式
             corrected = corrected.replace(/(\d{4})[./](\d{1,2})/g, '$1-$2');
-            
-            // 处理单个数字月份，补零
             corrected = corrected.replace(/(\d{4})-(\d)(?![0-9])/g, '$1-0$2');
-            
-            // 处理 MM-YYYY 格式（颠倒的）
             corrected = corrected.replace(/(\d{1,2})-(\d{4})/g, '$2-$1');
 
             wasFixed = original !== corrected;
 
-            // 3. 验证格式
+            // 验证格式
             const parts = corrected.split(',').filter(p => p.trim());
             let isValid = true;
             let error = '';
@@ -1569,9 +2673,7 @@
             for (let i = 0; i < parts.length; i++) {
                 let part = parts[i].trim();
                 
-                // 尝试进一步修复格式
                 if (!/^\d{4}-\d{2}$/.test(part)) {
-                    // 尝试匹配各种可能的格式
                     const yearMonthMatch = part.match(/(\d{4}).*?(\d{1,2})/);
                     if (yearMonthMatch) {
                         const year = yearMonthMatch[1];
@@ -1613,202 +2715,6 @@
             return { corrected, isValid, error, wasFixed };
         }
 
-        // 显示统计信息
-        function displayStatistics() {
-            if (!processedData) return;
-
-            const total = processedData.length;
-            
-            // 匹配统计
-            let matchSuccess = 0;
-            let matchWarning = 0;
-            let matchFail = 0;
-            
-            // 格式统计
-            let formatOk = 0;
-            let formatFixed = 0;
-            let formatError = 0;
-
-            processedData.forEach(record => {
-                // 匹配统计
-                if (record.matchLevel > 0) {
-                    if (record.matchLevel === 4 || record.匹配状态.includes('建议复核')) {
-                        matchWarning++;
-                    } else {
-                        matchSuccess++;
-                    }
-                } else {
-                    matchFail++;
-                }
-
-                // 格式统计
-                if (record.格式校验问题 === '无问题') {
-                    formatOk++;
-                } else if (record.格式校验问题.includes('已修正')) {
-                    formatFixed++;
-                } else {
-                    formatError++;
-                }
-            });
-
-            // 更新匹配统计
-            document.getElementById('totalCount').textContent = total;
-            document.getElementById('matchSuccessCount').textContent = matchSuccess;
-            document.getElementById('matchWarningCount').textContent = matchWarning;
-            document.getElementById('matchFailCount').textContent = matchFail;
-            
-            // 更新格式统计
-            document.getElementById('formatOkCount').textContent = formatOk;
-            document.getElementById('formatFixedCount').textContent = formatFixed;
-            document.getElementById('formatErrorCount').textContent = formatError;
-        }
-
-        // 显示结果
-        function displayResults() {
-            const resultsSection = document.getElementById('resultsSection');
-            const tableHeader = document.getElementById('tableHeader');
-            const tableBody = document.getElementById('tableBody');
-
-            resultsSection.style.display = 'block';
-
-            if (!processedData || processedData.length === 0) return;
-
-            // 生成表头
-            const headers = [...Object.keys(processedData[0])].filter(key => key !== 'matchLevel');
-            const frozenHeaders = ['专业ID', '匹配状态', '格式校验问题'];
-            
-            tableHeader.innerHTML = headers.map((header, index) => {
-                let className = '';
-                let frozenIndex = frozenHeaders.indexOf(header);
-                if (frozenIndex !== -1) {
-                    className = `frozen frozen-${frozenIndex + 1}`;
-                }
-                return `<th class="${className}">${header}</th>`;
-            }).join('');
-
-            // 生成表格内容
-            tableBody.innerHTML = processedData.map(record => {
-                const rowClass = getRowClass(record);
-                const cells = headers.map((header, index) => {
-                    let value = record[header] || '';
-                    if (typeof value === 'object') {
-                        value = JSON.stringify(value);
-                    }
-                    
-                    let className = '';
-                    let frozenIndex = frozenHeaders.indexOf(header);
-                    if (frozenIndex !== -1) {
-                        className = `frozen frozen-${frozenIndex + 1}`;
-                    }
-                    
-                    // 处理过长的文本
-                    let displayValue = value;
-                    if (typeof value === 'string' && value.length > 30) {
-                        displayValue = value.substring(0, 30) + '...';
-                    }
-                    
-                    // 特殊处理格式校验问题列
-                    if (header === '格式校验问题') {
-                        if (value === '无问题') {
-                            displayValue = '<span style="color: #22c55e; font-weight: 500;">✓ 无问题</span>';
-                        } else if (value.includes('已修正')) {
-                            displayValue = `<span class="validation-fixed">${displayValue}</span>`;
-                        } else if (value && value !== '无问题') {
-                            displayValue = `<span class="validation-issue">${displayValue}</span>`;
-                        }
-                    }
-                    
-                    return `<td class="${className}">${displayValue}</td>`;
-                }).join('');
-                
-                return `<tr class="${rowClass}">${cells}</tr>`;
-            }).join('');
-        }
-
-
-
-        // 获取行样式类
-        function getRowClass(record) {
-            // 优先检查格式校验问题
-            if (record.格式校验问题 && record.格式校验问题 !== '无问题' && !record.格式校验问题.includes('已修正')) {
-                return 'row-error';
-            }
-            
-            // 再检查匹配状态
-            if (record.matchLevel === 0 || record.匹配状态.includes('未找到匹配项')) {
-                return 'row-error';
-            } else if (record.matchLevel === 4 || record.匹配状态.includes('建议复核')) {
-                return 'row-warning';
-            } else if (record.专业ID && record.matchLevel > 0) {
-                return 'row-success';
-            }
-            return '';
-        }
-
-        // 切换信息区域展开/折叠
-        function toggleSection(sectionId) {
-            const content = document.getElementById(sectionId + '-content');
-            const button = event.target.closest('.expand-toggle');
-            const icon = button.querySelector('.expand-icon');
-            
-            if (content.classList.contains('expanded')) {
-                content.classList.remove('expanded');
-                button.classList.remove('expanded');
-                button.innerHTML = button.innerHTML.replace('收起详情', '查看详细功能').replace('收起规则', '查看匹配规则').replace('收起校验规则', '查看校验规则');
-            } else {
-                content.classList.add('expanded');
-                button.classList.add('expanded');
-                if (sectionId === 'overview') {
-                    button.innerHTML = button.innerHTML.replace('查看详细功能', '收起详情');
-                } else if (sectionId === 'matching') {
-                    button.innerHTML = button.innerHTML.replace('查看匹配规则', '收起规则');
-                } else if (sectionId === 'validation') {
-                    button.innerHTML = button.innerHTML.replace('查看校验规则', '收起校验规则');
-                }
-            }
-        }
-
-        // 导出结果
-        function exportResults() {
-            if (!processedData) return;
-
-            // 创建工作簿
-            const wb = XLSX.utils.book_new();
-            
-            // 过滤掉内部字段
-            const exportData = processedData.map(record => {
-                const { matchLevel, ...exportRecord } = record;
-                return exportRecord;
-            });
-
-            const ws = XLSX.utils.json_to_sheet(exportData);
-            
-            // 设置列宽
-            const colWidths = [];
-            const headers = Object.keys(exportData[0] || {});
-            headers.forEach((header, index) => {
-                const maxLength = Math.max(
-                    header.length,
-                    ...exportData.map(row => String(row[header] || '').length)
-                );
-                colWidths[index] = { wch: Math.min(maxLength + 2, 50) };
-            });
-            ws['!cols'] = colWidths;
-
-            XLSX.utils.book_append_sheet(wb, ws, '处理结果');
-
-            // 生成文件名
-            const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
-            const fileName = `${originalFileName}-processed-${date}.xlsx`;
-
-            // 导出文件
-            XLSX.writeFile(wb, fileName);
-        }
-
-        // 初始化
-        document.addEventListener('DOMContentLoaded', () => {
-            setupDragAndDrop();
-        });
     </script>
 </body>
-</html> 
+</html>
