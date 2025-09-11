@@ -538,6 +538,17 @@
         .stat-level4 .stat-number { color: #ef4444; }
         .stat-nomatch .stat-number { color: #6b7280; }
 
+        /* v2.0新增：质量控制统计样式 */
+        .stat-review .stat-number { color: #f59e0b; }
+        .stat-failed .stat-number { color: #ef4444; }
+        .stat-path .stat-number { color: #6366f1; }
+
+        .stat-percent {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
         .results-section {
             margin-top: 40px;
             display: none;
@@ -584,6 +595,12 @@
         .legend-level3 { background: #f59e0b; }
         .legend-level4 { background: #ef4444; }
         .legend-nomatch { background: #6b7280; }
+
+        /* v2.0新增：质量控制图例样式 */
+        .legend-review { background: #f59e0b; }
+        .legend-failed { background: #ef4444; }
+        .legend-chinese { background: #3b82f6; }
+        .legend-english { background: #10b981; }
 
         .table-wrapper {
             height: 600px;
@@ -701,6 +718,71 @@
         .confidence-low {
             background: #fee2e2;
             color: #991b1b;
+        }
+
+        /* v2.0新增：状态徽章样式 */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+            min-width: 60px;
+        }
+
+        .status-badge.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .status-badge.warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+
+        .status-badge.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        /* v2.0新增：匹配路径徽章样式 */
+        .path-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .path-badge.chinese {
+            background: #dbeafe;
+            color: #1d4ed8;
+            border: 1px solid #93c5fd;
+        }
+
+        .path-badge.english {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .path-badge.mixed {
+            background: #faf5ff;
+            color: #7c3aed;
+            border: 1px solid #d8b4fe;
+        }
+
+        /* v2.0新增：处理建议列样式 */
+        .action-cell {
+            font-size: 0.8rem;
+            color: #666;
+            max-width: 120px;
+            word-wrap: break-word;
         }
 
         .progress-bar {
@@ -1364,7 +1446,8 @@
                 
                 for (let i = 0; i < queries.length; i++) {
                     const query = queries[i];
-                    const result = universityMatcher.match(query.name, existingData);
+                    // 使用v2.0增强版匹配算法
+                    const result = universityMatcher.enhancedMatch(query.name, existingData);
                     
                     matchResults.push({
                         originalRecord: query.record,
@@ -1372,7 +1455,15 @@
                         matchedRecord: result.match,
                         confidence: result.confidence,
                         level: result.level,
-                        reason: result.reason
+                        reason: result.reason,
+                        // v2.0新增字段
+                        status: result.status,
+                        statusColor: result.statusColor,
+                        action: result.action,
+                        matchPath: result.matchPath,
+                        hasConflict: result.hasConflict,
+                        reviewSuggestion: result.reviewSuggestion,
+                        debug: result.debug
                     });
 
                     // 更新进度
@@ -1527,72 +1618,112 @@
             `;
         }
 
-        // 显示院校匹配统计
+        // 显示院校匹配统计 (v2.0增强版)
         function displayUniversityStatistics() {
             if (!processedData) return;
 
             const total = processedData.length;
-            const stats = {
+            
+            // v2.0三级质量控制统计
+            const qualityStats = {
+                success: 0,      // 匹配成功 (≥90%置信度)
+                review: 0,       // 需人工审核 (70-90%置信度) 
+                failed: 0        // 匹配失败 (<70%置信度)
+            };
+
+            // 传统级别统计 (保留兼容性)
+            const levelStats = {
                 level1: 0, level2: 0, level3: 0, level4: 0, level5: 0, nomatch: 0
             };
 
+            // 路径统计
+            const pathStats = {
+                chinese: 0,
+                english: 0,
+                mixed: 0
+            };
+
             processedData.forEach(result => {
-                if (result.level === 0) {
-                    stats.nomatch++;
+                // 质量控制统计
+                if (result.status === "匹配成功") {
+                    qualityStats.success++;
+                } else if (result.status === "需人工审核") {
+                    qualityStats.review++;
                 } else {
-                    stats[`level${result.level}`]++;
+                    qualityStats.failed++;
+                }
+
+                // 级别统计
+                if (result.level === 0) {
+                    levelStats.nomatch++;
+                } else {
+                    levelStats[`level${result.level}`]++;
+                }
+
+                // 路径统计
+                if (result.matchPath === 'chinese') {
+                    pathStats.chinese++;
+                } else if (result.matchPath === 'english') {
+                    pathStats.english++;
+                } else {
+                    pathStats.mixed++;
                 }
             });
 
             document.getElementById('totalCount').textContent = total;
             
-            // 更新统计网格
+            // 更新统计网格 (v2.0三级质量控制)
             const statsGrid = document.getElementById('statsGrid');
             statsGrid.innerHTML = `
-                <div class="stat-card stat-level1">
-                    <div class="stat-number">${stats.level1}</div>
-                    <div class="stat-label">精确匹配</div>
+                <div class="stat-card stat-success">
+                    <div class="stat-number">${qualityStats.success}</div>
+                    <div class="stat-label">自动通过</div>
+                    <div class="stat-percent">${(qualityStats.success / total * 100).toFixed(1)}%</div>
                 </div>
-                <div class="stat-card stat-level2">
-                    <div class="stat-number">${stats.level2}</div>
-                    <div class="stat-label">标准化匹配</div>
+                <div class="stat-card stat-review">
+                    <div class="stat-number">${qualityStats.review}</div>
+                    <div class="stat-label">需人工审核</div>
+                    <div class="stat-percent">${(qualityStats.review / total * 100).toFixed(1)}%</div>
                 </div>
-                <div class="stat-card stat-level3">
-                    <div class="stat-number">${stats.level3}</div>
-                    <div class="stat-label">关键词匹配</div>
+                <div class="stat-card stat-failed">
+                    <div class="stat-number">${qualityStats.failed}</div>
+                    <div class="stat-label">匹配失败</div>
+                    <div class="stat-percent">${(qualityStats.failed / total * 100).toFixed(1)}%</div>
                 </div>
-                <div class="stat-card stat-level4">
-                    <div class="stat-number">${stats.level4 + stats.level5}</div>
-                    <div class="stat-label">模糊匹配</div>
+                <div class="stat-card stat-path">
+                    <div class="stat-number">${pathStats.chinese}</div>
+                    <div class="stat-label">中文路径</div>
+                    <div class="stat-percent">${(pathStats.chinese / total * 100).toFixed(1)}%</div>
                 </div>
-                <div class="stat-card stat-nomatch">
-                    <div class="stat-number">${stats.nomatch}</div>
-                    <div class="stat-label">未找到匹配</div>
+                <div class="stat-card stat-path">
+                    <div class="stat-number">${pathStats.english}</div>
+                    <div class="stat-label">英文路径</div>
+                    <div class="stat-percent">${(pathStats.english / total * 100).toFixed(1)}%</div>
                 </div>
             `;
 
-            // 更新图例
+            // 更新图例 (v2.0三级质量控制)
             const legendContainer = document.getElementById('legendContainer');
             legendContainer.innerHTML = `
                 <div class="legend-item">
-                    <div class="legend-color legend-level1"></div>
-                    <span>精确匹配 (100%置信度)</span>
+                    <div class="legend-color legend-success"></div>
+                    <span>✅ 匹配成功 (≥90%置信度，自动通过)</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color legend-level2"></div>
-                    <span>标准化匹配 (95%置信度)</span>
+                    <div class="legend-color legend-review"></div>
+                    <span>⚠️ 需人工审核 (70-90%置信度)</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color legend-level3"></div>
-                    <span>关键词匹配 (85%置信度)</span>
+                    <div class="legend-color legend-failed"></div>
+                    <span>❌ 匹配失败 (<70%置信度，需重新录入)</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color legend-level4"></div>
-                    <span>模糊匹配 (需复核)</span>
+                    <div class="legend-color legend-chinese"></div>
+                    <span>🔵 中文路径匹配</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color legend-nomatch"></div>
-                    <span>未找到匹配</span>
+                    <div class="legend-color legend-english"></div>
+                    <span>🟢 英文路径匹配</span>
                 </div>
             `;
         }
@@ -1669,14 +1800,17 @@
 
             if (!processedData || processedData.length === 0) return;
 
-            // 生成表头
+            // 生成表头 (v2.0增强版)
             const originalColumns = Object.keys(processedData[0].originalRecord);
             const headers = [
                 ...originalColumns,
                 '匹配院校ID',
                 '匹配院校名称',
                 '置信度',
+                '匹配状态',
                 '匹配方式',
+                '匹配路径',
+                '处理建议',
                 '匹配原因'
             ];
             
@@ -1684,10 +1818,12 @@
                 `<th>${header}</th>`
             ).join('');
 
-            // 生成表格内容
+            // 生成表格内容 (v2.0增强版)
             tableBody.innerHTML = processedData.map(result => {
-                const rowClass = getUniversityRowClass(result.level);
+                const rowClass = getEnhancedUniversityRowClass(result);
                 const confidenceBadge = getConfidenceBadge(result.confidence);
+                const statusBadge = getStatusBadge(result.status, result.statusColor);
+                const pathBadge = getMatchPathBadge(result.matchPath);
                 
                 const cells = originalColumns.map(col => {
                     const value = result.originalRecord[col] || '';
@@ -1705,7 +1841,10 @@
                 cells.push(`<td>${matchedId}</td>`);
                 cells.push(`<td title="${matchedName}">${matchedName.length > 20 ? matchedName.substring(0, 20) + '...' : matchedName}</td>`);
                 cells.push(`<td>${confidenceBadge}</td>`);
+                cells.push(`<td>${statusBadge}</td>`);
                 cells.push(`<td>Level ${result.level}</td>`);
+                cells.push(`<td>${pathBadge}</td>`);
+                cells.push(`<td class="action-cell" title="${result.reviewSuggestion || result.action}">${result.action || '自动处理'}</td>`);
                 cells.push(`<td title="${result.reason}">${result.reason}</td>`);
                 
                 return `<tr class="${rowClass}">${cells.join('')}</tr>`;
@@ -1734,6 +1873,41 @@
         function getUniversityRowClass(level) {
             if (level === 0) return 'row-nomatch';
             return `row-level${Math.min(level, 4)}`; // Level 5 也使用 level4 样式
+        }
+
+        // v2.0增强版行样式类 (基于三级质量控制)
+        function getEnhancedUniversityRowClass(result) {
+            if (result.status === "匹配成功") {
+                return 'row-success';
+            } else if (result.status === "需人工审核") {
+                return 'row-warning';
+            } else if (result.status === "匹配失败") {
+                return 'row-error';
+            }
+            // 兜底逻辑
+            return getUniversityRowClass(result.level);
+        }
+
+        // 获取状态徽章
+        function getStatusBadge(status, statusColor) {
+            if (!status) return '<span class="status-badge">未知</span>';
+            
+            const colorClass = status === "匹配成功" ? "success" : 
+                              status === "需人工审核" ? "warning" : "error";
+            
+            return `<span class="status-badge ${colorClass}" style="color: ${statusColor || '#666'}">${status}</span>`;
+        }
+
+        // 获取匹配路径徽章
+        function getMatchPathBadge(matchPath) {
+            if (!matchPath) return '<span class="path-badge">未知</span>';
+            
+            const pathText = matchPath === 'chinese' ? '中文' : 
+                            matchPath === 'english' ? '英文' : '混合';
+            const pathClass = matchPath === 'chinese' ? 'chinese' : 
+                             matchPath === 'english' ? 'english' : 'mixed';
+            
+            return `<span class="path-badge ${pathClass}">${pathText}</span>`;
         }
 
         // 获取置信度徽章
@@ -2276,6 +2450,240 @@
                 }
 
                 return matches / maxLength;
+            }
+
+            // ========== v2.0 双路径匹配新增功能 ==========
+            
+            // 智能语言分离器
+            separateLanguages(text) {
+                if (!text) return { chinese: '', english: '' };
+                
+                const cleanText = text.toString().trim();
+                
+                // 提取中文部分 (包括中文标点)
+                const chineseMatches = cleanText.match(/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]+/g);
+                const chinese = chineseMatches ? chineseMatches.join('').trim() : '';
+                
+                // 提取英文部分 (包括数字、标点、空格)
+                const englishMatches = cleanText.match(/[a-zA-Z0-9\s\.,;:!?'"()\[\]{}\-&]+/g);
+                const english = englishMatches ? englishMatches.join(' ').replace(/\s+/g, ' ').trim() : '';
+                
+                return {
+                    chinese: this.cleanLanguagePart(chinese),
+                    english: this.cleanLanguagePart(english)
+                };
+            }
+            
+            // 清理语言片段
+            cleanLanguagePart(text) {
+                if (!text) return '';
+                
+                return text
+                    .replace(/^\s*[^\w\u4e00-\u9fff]+/, '') // 去除开头的符号
+                    .replace(/[^\w\u4e00-\u9fff]+\s*$/, '') // 去除结尾的符号
+                    .replace(/\s+/g, ' ') // 统一空格
+                    .trim();
+            }
+            
+            // 增强版主匹配函数 (双路径匹配)
+            enhancedMatch(queryName, database) {
+                if (!queryName || !database || database.length === 0) {
+                    return this.createFailureResult(queryName, "输入为空或数据库为空");
+                }
+                
+                // Step 1: 语言分离
+                const { chinese, english } = this.separateLanguages(queryName);
+                
+                // 记录原始匹配过程用于调试
+                const debug = {
+                    original: queryName,
+                    separated: { chinese, english },
+                    chineseResult: null,
+                    englishResult: null
+                };
+                
+                // Step 2: 双路径匹配
+                let chineseResult = null;
+                let englishResult = null;
+                
+                if (chinese && chinese.length >= 2) {
+                    chineseResult = this.match(chinese, database);
+                    debug.chineseResult = chineseResult;
+                }
+                
+                if (english && english.length >= 3) {
+                    englishResult = this.match(english, database);
+                    debug.englishResult = englishResult;
+                }
+                
+                // Step 3: 智能决策选择
+                const selectedResult = this.selectBestResult(chineseResult, englishResult, debug);
+                
+                // Step 4: 三级质量控制
+                return this.applyQualityControl(selectedResult, queryName, debug);
+            }
+            
+            // 智能决策器
+            selectBestResult(chineseResult, englishResult, debug = {}) {
+                // 策略1: 中文完全匹配优先
+                if (chineseResult && this.isExactMatch(chineseResult)) {
+                    debug.decision = "中文完全匹配优先";
+                    return { ...chineseResult, matchPath: 'chinese' };
+                }
+                
+                // 策略2: 英文完全匹配补充
+                if ((!chineseResult || !this.isExactMatch(chineseResult)) && 
+                    englishResult && this.isExactMatch(englishResult)) {
+                    debug.decision = "英文完全匹配补充";
+                    return { ...englishResult, matchPath: 'english' };
+                }
+                
+                // 策略3: 择优选择
+                if (!chineseResult && !englishResult) {
+                    debug.decision = "两路径均无结果";
+                    return null;
+                }
+                
+                if (!chineseResult) {
+                    debug.decision = "仅英文路径有结果";
+                    return { ...englishResult, matchPath: 'english' };
+                }
+                
+                if (!englishResult) {
+                    debug.decision = "仅中文路径有结果";
+                    return { ...chineseResult, matchPath: 'chinese' };
+                }
+                
+                // 检测冲突
+                const hasConflict = this.detectConflict(chineseResult, englishResult);
+                debug.hasConflict = hasConflict;
+                
+                // 冲突解决策略
+                if (hasConflict) {
+                    // 精确匹配优先
+                    if (chineseResult.level < englishResult.level) {
+                        debug.decision = "中文匹配级别更高";
+                        return { ...chineseResult, matchPath: 'chinese', hasConflict: true };
+                    }
+                    if (englishResult.level < chineseResult.level) {
+                        debug.decision = "英文匹配级别更高";
+                        return { ...englishResult, matchPath: 'english', hasConflict: true };
+                    }
+                    
+                    // 置信度差距判断
+                    const confidenceDiff = Math.abs(chineseResult.confidence - englishResult.confidence);
+                    if (confidenceDiff > 0.15) {
+                        const better = chineseResult.confidence > englishResult.confidence ? chineseResult : englishResult;
+                        const path = chineseResult.confidence > englishResult.confidence ? 'chinese' : 'english';
+                        debug.decision = `置信度差距显著，选择${path}`;
+                        return { ...better, matchPath: path, hasConflict: true };
+                    }
+                    
+                    // 中文优势策略
+                    debug.decision = "冲突情况下中文优先";
+                    return { ...chineseResult, matchPath: 'chinese', hasConflict: true };
+                }
+                
+                // 无冲突情况，选择置信度更高者
+                const better = chineseResult.confidence >= englishResult.confidence ? chineseResult : englishResult;
+                const path = chineseResult.confidence >= englishResult.confidence ? 'chinese' : 'english';
+                debug.decision = `择优选择${path}`;
+                return { ...better, matchPath: path, hasConflict: false };
+            }
+            
+            // 判断是否为完全匹配
+            isExactMatch(result) {
+                return result && result.level <= 2 && result.confidence >= 0.98;
+            }
+            
+            // 检测匹配结果冲突
+            detectConflict(result1, result2) {
+                if (!result1 || !result2 || !result1.match || !result2.match) {
+                    return false;
+                }
+                
+                // 检查是否匹配到不同院校
+                const id1 = result1.match['中国院校ID'] || result1.match['院校ID'] || result1.match['ID'] || '';
+                const id2 = result2.match['中国院校ID'] || result2.match['院校ID'] || result2.match['ID'] || '';
+                
+                return id1 && id2 && id1 !== id2;
+            }
+            
+            // 三级质量控制
+            applyQualityControl(result, originalQuery, debug = {}) {
+                if (!result || result.confidence < 0.7) {
+                    return {
+                        match: null,
+                        confidence: 0,
+                        level: 0,
+                        status: "匹配失败",
+                        statusColor: "#ff4757",
+                        action: "需要补充院校信息或检查名称格式",
+                        reason: "置信度过低或无匹配结果",
+                        originalQuery: originalQuery,
+                        debug: debug
+                    };
+                }
+                
+                if (result.confidence < 0.9) {
+                    return {
+                        ...result,
+                        status: "需人工审核",
+                        statusColor: "#ffa502",
+                        action: "置信度偏低，建议人工确认",
+                        originalQuery: originalQuery,
+                        debug: debug,
+                        reviewSuggestion: this.generateReviewSuggestion(result)
+                    };
+                }
+                
+                return {
+                    ...result,
+                    status: "匹配成功",
+                    statusColor: "#26de81",
+                    action: "自动通过",
+                    originalQuery: originalQuery,
+                    debug: debug
+                };
+            }
+            
+            // 生成人工审核建议
+            generateReviewSuggestion(result) {
+                const suggestions = [];
+                
+                if (result.confidence >= 0.85) {
+                    suggestions.push("🟢 建议通过：置信度较高");
+                }
+                
+                if (result.level <= 2) {
+                    suggestions.push("🟢 建议通过：精确/标准化匹配");
+                }
+                
+                if (result.hasConflict) {
+                    suggestions.push("🟡 注意：中英文匹配结果不一致");
+                }
+                
+                if (result.matchPath === 'chinese') {
+                    suggestions.push("🔵 基于：中文路径匹配");
+                } else if (result.matchPath === 'english') {
+                    suggestions.push("🔵 基于：英文路径匹配");
+                }
+                
+                return suggestions.length > 0 ? suggestions.join(" | ") : "请仔细核对匹配结果";
+            }
+            
+            // 创建失败结果
+            createFailureResult(originalQuery, reason) {
+                return {
+                    match: null,
+                    confidence: 0,
+                    level: 0,
+                    status: "匹配失败",
+                    statusColor: "#ff4757",
+                    action: "检查输入格式",
+                    reason: reason,
+                    originalQuery: originalQuery
+                };
             }
         }
 

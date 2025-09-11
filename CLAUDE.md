@@ -49,6 +49,44 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. **Level 4**: 模糊匹配 (70%置信度) - 编辑距离算法
 5. **Level 5**: 语义匹配 (60%置信度) - 简称展开、核心词匹配
 
+### 双路径匹配优化算法 (v2.0)
+基于巴斯大学认可名单分析，发现中英文混合名称导致匹配准确率下降问题。优化方案采用**语言分离 + 双路径匹配 + 三级质量控制**架构：
+
+#### 核心流程
+```
+输入："安徽理工大学Anhui University of Science"
+                    ↓
+              【语言分离器】
+                ↙        ↘
+    中文路径：安徽理工大学     英文路径：Anhui University of Science
+              ↓                        ↓
+        5级匹配算法                  5级匹配算法
+              ↓                        ↓
+        结果A (置信度)               结果B (置信度)
+                ↘        ↙
+              【智能决策器】
+                    ↓
+            【三级质量控制】
+                    ↓
+              最终匹配结果
+```
+
+#### 决策策略
+1. **中文完全匹配优先**: 若中文达到Level 1-2匹配且置信度≥98%，直接采用
+2. **英文完全匹配补充**: 若中文未完全匹配，英文达到完全匹配，采用英文结果
+3. **择优选择**: 两者均未完全匹配时，选择置信度更高的结果
+
+#### 三级质量控制
+- **≥90%置信度**: ✅ 匹配成功 (绿色) - 自动通过
+- **70-90%置信度**: ⚠️ 需人工审核 (橙色) - 智能排序后人工确认
+- **<70%置信度**: ❌ 匹配失败 (红色) - 直接标记，需重新录入
+
+#### 预期改进效果
+- 自动通过率提升至25%
+- 平均置信度从80%提升至92%
+- 人工审核工作量减少35%
+- 匹配准确性提升20%
+
 ### 数据校验规则
 - **学制**: 标准格式为"数字/单位"，支持年、月、周、学期、学分
 - **开学时间**: 标准格式为"YYYY-MM"，支持多个时间用逗号分隔
@@ -71,6 +109,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - `keywordMatch()`: 关键词匹配 (Level 3)
   - `fuzzyMatch()`: 模糊匹配 (Level 4)
   - `semanticMatch()`: 语义匹配 (Level 5)
+
+#### 双路径匹配相关 (v2.0新增)
+- `separateLanguages(text)`: 智能语言分离器，分离中英文内容
+- `enhancedMatch(queryName, database)`: 增强版主匹配函数，集成双路径逻辑
+- `selectBestResult(chineseResult, englishResult)`: 智能决策器，选择最优匹配结果
+- `applyQualityControl(result)`: 三级质量控制函数
+- `isExactMatch(result)`: 判断是否为完全匹配
+- `detectConflict(result1, result2)`: 检测匹配结果冲突
+- `generateReviewSuggestion(item)`: 生成人工审核建议
 
 #### 通用工具函数
 - `switchTab(tab)`: 功能标签切换
